@@ -11,7 +11,7 @@ def postgres_connector(host, port, database, user, password=None):
    return sqlalchemy.create_engine(url, client_encoding='utf-8')
 
 # Convert datetime field of dataframe into categorical attributes
-def add_datepart(df, fldname, errors="raise"):
+def my_add_datepart(df, fldname, errors="raise"):
     "Create many new columns based on datetime column."
     fld = df[fldname]
     fld_dtype = fld.dtype
@@ -30,6 +30,10 @@ def load_df(engine, mode='train'):
   if mode == 'train':
     for query in train_queries:
       dfs.append(pd.read_sql(query, engine))
+  elif mode == 'debug':
+      dfs.append(pd.read_sql(debug_query, engine))
+  elif mode == 'debug_pred':
+      dfs.append(pd.read_sql(debug_pred_query, engine))
   else:
     for query in test_queries:
       dfs.append(pd.read_sql(query, engine))
@@ -37,24 +41,40 @@ def load_df(engine, mode='train'):
   print('Datasets loaded. Joining on post_key...')
   
   df = reduce(lambda left,right: pd.merge(left,right,on='post_key'), dfs)
-  df.drop('post_key', axis=1, inplace=True)
   
-  print('Datsets joined.')
+  print('Datasets joined.')
   print(df.info())
 
   print('Cleaning data...')
+  if mode == 'train':
+    sample_frac = 0.5
+    print('Sample {} fraction of data to avoid OOM issues.'.format(sample_frac))
+    df = df.sample(frac=sample_frac).reset_index(drop=True)
   # 為了簡化問題複雜度，我們目前訂為在文章發出的 36 小時內愛心數 >= 1000 就是熱門文章。
-  df['is_trending'] = df['like_count_36_hour'] >= 1000
-  df.is_trending = df.is_trending.astype(int)
-  df.drop('like_count_36_hour', axis=1, inplace=True)
+  if mode == 'train' or mode == 'debug':
+    df['is_trending'] = df['like_count_36_hour'] >= 1000
+    df.is_trending = df.is_trending.astype(int)
+    df.drop('like_count_36_hour', axis=1, inplace=True)
 
   # Convert datetime field into categorical attributes
-  add_datepart(df, 'created_at_hour')
+  my_add_datepart(df, 'created_at_hour')
   print('Datsets cleaned.')
   print(df.info())
   return df
 
 # Queries
+debug_query = """
+SELECT *
+FROM posts_train
+LIMIT 5000
+"""
+
+debug_pred_query = """
+SELECT *
+FROM posts_test
+LIMIT 5000
+"""
+
 posts_train_query = """
 SELECT *
 FROM posts_train
