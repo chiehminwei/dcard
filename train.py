@@ -85,7 +85,9 @@ if __name__ == "__main__":
 
 	layers=[200,100]
 	emb_szs={'created_at_Dayofweek': 10, 'created_at_Hour': 15}
-	print('Using a {}-level MLP. Sizes are '.format(len(layers)) + layers)
+	print('Using a {}-level MLP. Sizes are '.format(len(layers)) + str(layers))
+	print('Embedding sizes:')
 	print(emb_szs)
+	print('Start training...')
 	train(dataLoader, layers, emb_szs, model_filepath, num_epochs=10)
 
