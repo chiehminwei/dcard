@@ -5,9 +5,8 @@ import sys
 import pandas as pd
 from functools import reduce
 import numpy as np
-from fastai.tabular import *
 
-from utils import postgres_connector, train_queries, test_queries
+from utils import postgres_connector, train_queries, test_queries, add_datepart
 
 
 def load_df(engine):
@@ -75,7 +74,8 @@ if __name__ == "__main__":
 	)
 	df = load_df(engine)
 	
-	cat_names = ['created_at_Dayofweek',  'created_at_Hour']
+	from fastai.tabular import *
+	cat_names = ['created_at_dayofweek',  'created_at_hour']
 	dep_var = 'is_trending'
 	path = 'model_path'
 	
