@@ -34,10 +34,10 @@ def train(dataLoader, layers, emb_szs, model_filepath, lr=5e-2,  num_epochs=20):
 if __name__ == "__main__":
 
 	database_host, model_filepath = None, None
-	if len(sys.argv) > 2:
-		database_host = sys.argv[2]
-	if len(sys.argv) > 3:
-		model_filepath = sys.argv[3]
+	if len(sys.argv) >= 2:
+		database_host = sys.argv[1]
+	if len(sys.argv) >= 3:
+		model_filepath = sys.argv[2]
 	if not database_host:
 		database_host = "35.187.144.113"
 	if not model_filepath:
