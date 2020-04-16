@@ -1,6 +1,7 @@
 import sqlalchemy
 import numpy as np
 import pandas as pd
+from functools import reduce
 
 # Connector function
 def postgres_connector(host, port, database, user, password=None):

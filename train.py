@@ -3,7 +3,6 @@
 
 import sys
 import pandas as pd
-from functools import reduce
 import numpy as np
 from utils import postgres_connector, load_df
 from fastai.tabular import *
@@ -67,5 +66,5 @@ if __name__ == "__main__":
 	print('Embedding sizes:')
 	print(emb_szs)
 	print('Start training...')
-	learn = train(dataLoader, layers, emb_szs, model_filepath, num_epochs=10)
+	learn = train(dataLoader, layers, emb_szs, model_filepath, num_epochs=30)
 	learn.export('trained_model.pkl')
