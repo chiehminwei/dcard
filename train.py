@@ -5,36 +5,8 @@ import sys
 import pandas as pd
 from functools import reduce
 import numpy as np
-
-from utils import postgres_connector, train_queries, test_queries, add_datepart
-
-
-def load_df(engine):
-	print('Loading datasets from server...')
-	dfs = []
-	# temporarily left out for debugging
-	# for query in train_queries:
-	for query in test_queries:
-	  dfs.append(pd.read_sql(query, engine))
-
-	print('Datasets loaded. Joining on post_key...')
-	
-	df = reduce(lambda left,right: pd.merge(left,right,on='post_key'), dfs)
-	df.drop('post_key', axis=1, inplace=True)
-	
-	print('Datsets joined.')
-	print(df.info())
-
-	print('Cleaning data...')
-	# 為了簡化問題複雜度，我們目前訂為在文章發出的 36 小時內愛心數 >= 1000 就是熱門文章。
-	df['is_trending'] = df['like_count_36_hour'] >= 1000
-	df.is_trending = df.is_trending.astype(int)
-
-	# Convert datetime field into categorical attributes
-	add_datepart(df, 'created_at_hour')
-	print('Datsets cleaned.')
-	print(df.info())
-	return df
+from utils import postgres_connector, load_df
+from fastai.tabular import *
 
 def createDataLoader(df, cat_names, dep_var, path="model_path", sample_frac=0.1, dev_set_size=2000, procs=None):
 	df = df.sample(frac=sample_frac).reset_index(drop=True)
@@ -45,12 +17,18 @@ def createDataLoader(df, cat_names, dep_var, path="model_path", sample_frac=0.1,
 	return data
 
 def train(dataLoader, layers, emb_szs, model_filepath, lr=5e-2,  num_epochs=20):
-	learn = tabular_learner(dataLoader, layers=layers, emb_szs=emb_szs, metrics=accuracy, callback_fns=ShowGraph)
+	from fastai.callbacks import *
+	f_score = FBeta(average='macro', beta=1)
+	learn = tabular_learner(dataLoader, layers=layers, emb_szs=emb_szs, metrics=f_score)
+	callbacks = [SaveModelCallback(learn, name='best'),
+				 EarlyStoppingCallback(learn, min_delta=0.01, patience=5),]
+				 #ShowGraph(learn)]
+	learn.callbacks = callbacks
 	# The next 2 lines gave the starting lr of 5e-2
 	# learn.lr_find()
 	# learn.recorder.plot() 
 	learn.fit_one_cycle(num_epochs, lr)
-	learn.save(model_filepath, return_path=True)
+	return learn
 
 if __name__ == "__main__":
 
@@ -72,12 +50,11 @@ if __name__ == "__main__":
 	   "candidate",
 	   "dcard-data-intern-2020"
 	)
-	df = load_df(engine)
+	df = load_df(engine, mode='train')
 	
-	from fastai.tabular import *
 	cat_names = ['created_at_dayofweek',  'created_at_hour']
 	dep_var = 'is_trending'
-	path = 'model_path'
+	path = model_filepath
 	
 	print('Creating data loader...')
 	dataLoader = createDataLoader(df, cat_names, dep_var, path)
@@ -89,5 +66,5 @@ if __name__ == "__main__":
 	print('Embedding sizes:')
 	print(emb_szs)
 	print('Start training...')
-	train(dataLoader, layers, emb_szs, model_filepath, num_epochs=10)
-
+	learn = train(dataLoader, layers, emb_szs, model_filepath, num_epochs=10)
+	learn.export('trained_model.pkl')

@@ -22,6 +22,37 @@ def add_datepart(df, fldname, errors="raise"):
     df['created_at_dayofweek'] = fld.dt.dayofweek
     df['created_at_hour'] = fld.dt.hour
     
+def load_df(engine, mode='train'):
+  print('Loading datasets from server...')
+  dfs = []
+  # temporarily left out for debugging
+  if mode == 'train':
+    for query in train_queries:
+      dfs.append(pd.read_sql(query, engine))
+  else:
+    for query in test_queries:
+      dfs.append(pd.read_sql(query, engine))
+
+  print('Datasets loaded. Joining on post_key...')
+  
+  df = reduce(lambda left,right: pd.merge(left,right,on='post_key'), dfs)
+  df.drop('post_key', axis=1, inplace=True)
+  
+  print('Datsets joined.')
+  print(df.info())
+
+  print('Cleaning data...')
+  # 為了簡化問題複雜度，我們目前訂為在文章發出的 36 小時內愛心數 >= 1000 就是熱門文章。
+  df['is_trending'] = df['like_count_36_hour'] >= 1000
+  df.is_trending = df.is_trending.astype(int)
+  df.drop('like_count_36_hour', axis=1, inplace=True)
+
+  # Convert datetime field into categorical attributes
+  add_datepart(df, 'created_at_hour')
+  print('Datsets cleaned.')
+  print(df.info())
+  return df
+
 # Queries
 posts_train_query = """
 SELECT *
