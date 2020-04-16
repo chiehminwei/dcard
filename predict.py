@@ -42,19 +42,16 @@ engine = postgres_connector(
    "candidate",
    "dcard-data-intern-2020"
 )
-df = load_df(engine, mode='debug_pred')
+df = load_df(engine, mode='test')
 learn = load_learner(file_path, file_name, test=TabularList.from_df(df))
 preds = learn.get_preds(ds_type=DatasetType.Test)[1].numpy()
 final_df = pd.DataFrame({'post_key': df['post_key'], 'is_trending': preds})
 final_df.to_csv('predictions.csv', header=True, index=False)
 
 
-
-
 df['is_trending'] = df['like_count_36_hour'] >= 1000
 df.is_trending = df.is_trending.astype(int)
 y_true = df['is_trending'].to_numpy()
 y_pred = preds
-print(len(y_true))
-print(len(y_pred))
+print('f1_socre:')
 print(f1_score(y_true, y_pred, average='macro'))
