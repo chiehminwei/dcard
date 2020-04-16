@@ -7,6 +7,8 @@ from functools import reduce
 import numpy as np
 from utils import postgres_connector, load_df
 from fastai.tabular import *
+from fastai.callbacks import *
+
 
 def createDataLoader(df, cat_names, dep_var, path="model_path", sample_frac=0.1, dev_set_size=2000, procs=None):
 	df = df.sample(frac=sample_frac).reset_index(drop=True)
@@ -17,7 +19,6 @@ def createDataLoader(df, cat_names, dep_var, path="model_path", sample_frac=0.1,
 	return data
 
 def train(dataLoader, layers, emb_szs, model_filepath, lr=5e-2,  num_epochs=20):
-	from fastai.callbacks import *
 	f_score = FBeta(average='macro', beta=1)
 	learn = tabular_learner(dataLoader, layers=layers, emb_szs=emb_szs, metrics=f_score)
 	callbacks = [SaveModelCallback(learn, name='best'),
