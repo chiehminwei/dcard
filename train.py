@@ -31,7 +31,7 @@ def load_df(engine):
 	df.is_trending = df.is_trending.astype(int)
 
 	# Convert datetime field into categorical attributes
-	add_datepart(df, 'created_at_hour', time=True)
+	add_datepart(df, 'created_at_hour')
 	print('Datsets cleaned.')
 	print(df.info())
 	return df

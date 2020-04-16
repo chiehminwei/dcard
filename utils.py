@@ -10,7 +10,7 @@ def postgres_connector(host, port, database, user, password=None):
    return sqlalchemy.create_engine(url, client_encoding='utf-8')
 
 # Convert datetime field of dataframe into categorical attributes
-def add_datepart(df, fldname, drop=True, time=False, errors="raise"):
+def add_datepart(df, fldname, errors="raise"):
     "Create many new columns based on datetime column."
     fld = df[fldname]
     fld_dtype = fld.dtype
@@ -21,8 +21,7 @@ def add_datepart(df, fldname, drop=True, time=False, errors="raise"):
                       infer_datetime_format=True, errors=errors)
     df['created_at_dayofweek'] = fld.dt.dayofweek
     df['created_at_hour'] = fld.dt.hour
-    if drop: df.drop(fldname, axis=1, inplace=True)
-
+    
 # Queries
 posts_train_query = """
 SELECT *
